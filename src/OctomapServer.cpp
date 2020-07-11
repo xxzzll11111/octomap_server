@@ -28,6 +28,7 @@
  */
 
 #include <octomap_server/OctomapServer.h>
+#include <chrono>
 
 using namespace octomap;
 using octomap_msgs::Octomap;
@@ -261,13 +262,20 @@ bool OctomapServer::openFile(const std::string& filename){
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
   ros::WallTime startTime = ros::WallTime::now();
 
+  std::chrono::steady_clock::time_point t1,t2;
+  std::chrono::duration<double> time_used;
 
   //
   // ground filtering in base frame
   //
+  t1=std::chrono::steady_clock::now();//程序段开始前取得系统运行时间(ms)
   PCLPointCloud pc; // input cloud for filtering and ground-detection
   pcl::fromROSMsg(*cloud, pc);
+  t2=std::chrono::steady_clock::now();//程序段结束后取得系统运行时间(ms)
+  time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+  std::cout << "       ROS_msg to PCL_pointcloud time:" << (time_used.count() * 1000) << " ms." << std::endl;
 
+  t1=std::chrono::steady_clock::now();//程序段开始前取得系统运行时间(ms)
   tf::StampedTransform sensorToWorldTf;
   try {
     m_tfListener.lookupTransform(m_worldFrameId, cloud->header.frame_id, cloud->header.stamp, sensorToWorldTf);
@@ -275,7 +283,12 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
     ROS_ERROR_STREAM( "Transform error of sensor data: " << ex.what() << ", quitting callback");
     return;
   }
+  ROS_INFO("%s To %s Tf: x= %f y= %f z= %f", m_worldFrameId.c_str(), cloud->header.frame_id.c_str(), sensorToWorldTf.getOrigin().getX(), sensorToWorldTf.getOrigin().getY(), sensorToWorldTf.getOrigin().getZ());
+  t2=std::chrono::steady_clock::now();//程序段结束后取得系统运行时间(ms)
+  time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+  std::cout << "       Get TF time:" << (time_used.count() * 1000) << " ms." << std::endl;
 
+  t1=std::chrono::steady_clock::now();//程序段开始前取得系统运行时间(ms)
   Eigen::Matrix4f sensorToWorld;
   pcl_ros::transformAsMatrix(sensorToWorldTf, sensorToWorld);
 
@@ -342,14 +355,25 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
     pc_ground.header = pc.header;
     pc_nonground.header = pc.header;
   }
+  t2=std::chrono::steady_clock::now();//程序段结束后取得系统运行时间(ms)
+  time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+  std::cout << "       local_pointcloud to global_pointcloud time:" << (time_used.count() * 1000) << " ms." << std::endl;
 
-
+  t1=std::chrono::steady_clock::now();//程序段开始前取得系统运行时间(ms)
   insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
+  t2=std::chrono::steady_clock::now();//程序段结束后取得系统运行时间(ms)
+  time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+  std::cout << "       global_pointcloud to Octomap time:" << (time_used.count() * 1000) << " ms." << std::endl;
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
   ROS_DEBUG("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
 
+  t1=std::chrono::steady_clock::now();//程序段开始前取得系统运行时间(ms)
   publishAll(cloud->header.stamp);
+  t2=std::chrono::steady_clock::now();//程序段结束后取得系统运行时间(ms)
+  time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+  std::cout << "       Publish time:" << (time_used.count() * 1000) << " ms." << std::endl;
+
 }
 
 void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground){

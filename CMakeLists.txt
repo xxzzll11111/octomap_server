@@ -42,17 +42,20 @@ set(LINK_LIBS
   ${catkin_LIBRARIES}
 )
 
-add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
+add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp src/MultiOctomapServer.cpp)
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 
-add_library(${PROJECT_NAME}_color src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
+add_library(${PROJECT_NAME}_color src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp src/MultiOctomapServer.cpp)
 target_link_libraries(${PROJECT_NAME}_color ${LINK_LIBS})
 add_dependencies(${PROJECT_NAME}_color ${PROJECT_NAME}_gencfg)
 target_compile_definitions(${PROJECT_NAME}_color PUBLIC COLOR_OCTOMAP_SERVER)
 
 add_executable(octomap_server_node src/octomap_server_node.cpp)
 target_link_libraries(octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
+
+add_executable(multi_octomap_server_node src/multi_octomap_server_node.cpp)
+target_link_libraries(multi_octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
 
 add_executable(octomap_color_server_node src/octomap_server_node.cpp)
 target_link_libraries(octomap_color_server_node ${PROJECT_NAME}_color ${LINK_LIBS})
@@ -76,6 +79,7 @@ target_link_libraries(octomap_server_nodelet ${PROJECT_NAME} ${LINK_LIBS})
 # install targets:
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_color
   octomap_server_node
+  multi_octomap_server_node
   octomap_color_server_node
   octomap_server_static
   octomap_server_multilayer

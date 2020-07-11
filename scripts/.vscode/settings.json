@@ -1,0 +1,8 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/xuzhl/catkin_ws_d/devel/lib/python2.7/dist-packages",
+        "/home/xuzhl/catkin_ws/devel/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages",
+        "/home/xuzhl/git_workspace/sim_test/Matterport3DSimulator/build"
+    ]
+}

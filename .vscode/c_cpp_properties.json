@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/xuzhl/catkin_ws_d/devel/include/**",
+                "/home/xuzhl/catkin_ws/devel/include/**",
+                "/opt/ros/melodic/include/**",
+                "/home/xuzhl/catkin_ws_d/src/dslam_release/include/**",
+                "/home/xuzhl/catkin_ws/src/ROS-DSLAM/include/**",
+                "/home/xuzhl/catkin_ws/src/octomap_demo/include/**",
+                "/home/xuzhl/catkin_ws/src/octomap_mapping/octomap_server/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
