@@ -15,12 +15,12 @@ MultiOctomapServer::MultiOctomapServer(const ros::NodeHandle private_nh_ = ros::
 void MultiOctomapServer::mergeMapCallback(const octomap_msgs::Octomap::ConstPtr& map){
   std::cout << "start merge" << std::endl;
   tf::StampedTransform sensorToWorldTf;
-  m_tfListener.waitForTransform(m_worldFrameId, map->header.frame_id, map->header.stamp, ros::Duration(4.0));
+  m_tfListener.waitForTransform(m_worldFrameId, map->header.frame_id, ros::Time(0), ros::Duration(4.0));
   try {
-    m_tfListener.lookupTransform(m_worldFrameId, map->header.frame_id, map->header.stamp, sensorToWorldTf);
+    m_tfListener.lookupTransform(m_worldFrameId, map->header.frame_id, ros::Time(0), sensorToWorldTf);
   } catch(tf::TransformException& ex){
     ROS_ERROR_STREAM( "Transform error of sensor data: " << ex.what() << ", quitting callback");
-    std::cout << "no tf " << m_worldFrameId << " to " << map->header.frame_id << " at stamp:" << map->header.stamp << std::endl;
+    std::cout << "no tf " << m_worldFrameId << " to " << map->header.frame_id << " at stamp:" << ros::Time(0) << std::endl;
     return;
   }
   std::cout << "got tf" << m_worldFrameId << " to " << map->header.frame_id << std::endl;
