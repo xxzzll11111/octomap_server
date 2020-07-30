@@ -40,6 +40,7 @@ void MultiOctomapServer::mergeMapCallback(const octomap_msgs::Octomap::ConstPtr&
       float log_odds_value = it->getLogOdds();
       m_octree->updateNode(p.x, p.y, p.z , log_odds_value, false);
   }
+  publishAll(map->header.stamp);
   std::cout << "finish merge" << std::endl;
 }
 
