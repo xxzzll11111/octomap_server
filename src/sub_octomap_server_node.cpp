@@ -1,5 +1,5 @@
 /**
-* multi_octomap_server: A Tool to serve 3D OctoMaps in ROS (binary and as visualization)
+* sub_octomap_server: A Tool to serve 3D OctoMaps in ROS (binary and as visualization)
 * (inspired by the ROS map_saver)
 * @author A. Hornung, University of Freiburg, Copyright (C) 2009 - 2012.
 * @see http://octomap.sourceforge.net/
@@ -37,12 +37,43 @@
 
 
 #include <ros/ros.h>
-#include <octomap_server/MultiOctomapServer.h>
+#include <octomap_server/OctomapServer.h>
+#include <octomap_server/GetSubmaps.h>
+#include <octomap_msgs/OctomapWithPose.h>
+#include <geometry_msgs/PoseStamped.h>
 
-#define USAGE "\nUSAGE: multi_octomap_server <map.[bt|ot]>\n" \
+#define USAGE "\nUSAGE: sub_octomap_server <map.[bt|ot]>\n" \
         "  map.bt: inital octomap 3D map file to read\n"
 
 using namespace octomap_server;
+
+std::vector<octomap_msgs::OctomapWithPose> submaps;
+OctomapServer* server_ptr;
+
+void keyframe_Callback(const geometry_msgs::PoseStamped::ConstPtr &msg){
+  if(submaps.size() == 0){
+    octomap_msgs::OctomapWithPose submap;
+    submaps.push_back(submap);
+  }
+  else if(submaps.back().header.frame_id != msg->header.frame_id){
+    if(octomap_msgs::binaryMapToMsg(*(server_ptr->m_octree), submaps.back().octomap)){
+      submaps.back().octomap.header.frame_id = server_ptr->m_worldFrameId;
+      submaps.back().octomap.header.stamp = ros::Time::now();
+      octomap_msgs::OctomapWithPose submap;
+      submaps.push_back(submap);
+      server_ptr->m_octree->clear();
+    }
+  }
+  submaps.back().header = msg->header;
+  submaps.back().origin = msg->pose;
+}
+
+bool get_submaps_Srv(octomap_server::GetSubmaps::Request &req, octomap_server::GetSubmaps::Response &res){
+  if(!octomap_msgs::binaryMapToMsg(*(server_ptr->m_octree), submaps.back().octomap))
+    return false;
+  res.submaps = submaps;
+  return true;
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "octomap_server");
@@ -55,7 +86,8 @@ int main(int argc, char** argv){
     exit(-1);
   }
 
-  MultiOctomapServer server(private_nh, nh);
+  OctomapServer server(private_nh, nh);
+  server_ptr = &server;
   ros::spinOnce();
 
   if (argc == 2){
@@ -77,10 +109,13 @@ int main(int argc, char** argv){
     }
   }
 
+  ros::Subscriber sub = server_ptr->m_nh.subscribe<geometry_msgs::PoseStamped>("keyframe_pose", 1, keyframe_Callback);  //设置回调函数
+  ros::ServiceServer srv = server_ptr->m_nh.advertiseService("get_submaps", get_submaps_Srv);
+
   try{
     ros::spin();
   }catch(std::runtime_error& e){
-    ROS_ERROR("multi_octomap_server exception: %s", e.what());
+    ROS_ERROR("sub_octomap_server exception: %s", e.what());
     return -1;
   }
 

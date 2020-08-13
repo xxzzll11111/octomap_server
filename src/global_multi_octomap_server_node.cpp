@@ -1,5 +1,5 @@
 /**
-* multi_octomap_server: A Tool to serve 3D OctoMaps in ROS (binary and as visualization)
+* global_multi_octomap_server: A Tool to serve 3D OctoMaps in ROS (binary and as visualization)
 * (inspired by the ROS map_saver)
 * @author A. Hornung, University of Freiburg, Copyright (C) 2009 - 2012.
 * @see http://octomap.sourceforge.net/
@@ -38,11 +38,59 @@
 
 #include <ros/ros.h>
 #include <octomap_server/MultiOctomapServer.h>
+#include <octomap_server/TransformStampedArraywithMap.h>
+#include <octomap_server/GetSubmaps.h>
 
-#define USAGE "\nUSAGE: multi_octomap_server <map.[bt|ot]>\n" \
+#define USAGE "\nUSAGE: global_multi_octomap_server <map.[bt|ot]>\n" \
         "  map.bt: inital octomap 3D map file to read\n"
 
+#ifdef COLOR_OCTOMAP_SERVER
+  typedef octomap::ColorOcTree OcTreeT;
+#else
+  typedef octomap::OcTree OcTreeT;
+#endif
+
 using namespace octomap_server;
+
+MultiOctomapServer* server_ptr;
+
+void add_submap_to_global(const geometry_msgs::TransformStamped &tf_msg, const octomap_msgs::OctomapWithPose &submap_msg){
+  tf::StampedTransform kfToWorldTf;
+  tf::transformStampedMsgToTF(tf_msg, kfToWorldTf);
+
+  Eigen::Matrix4f kfToWorld_;
+  pcl_ros::transformAsMatrix(kfToWorldTf, kfToWorld_);
+  Eigen::Affine3f kfToWorld(kfToWorld_);
+
+  OcTreeT* submap = dynamic_cast<OcTreeT*>(octomap_msgs::msgToMap(submap_msg.octomap));
+  for (OcTreeT::iterator it = submap->begin(submap->getTreeDepth()), end = submap->end(); it != end; ++it)
+  {
+      double x = it.getX();
+      double y = it.getY();
+      double z = it.getZ();
+      pcl::PointXYZ p = pcl::transformPoint(pcl::PointXYZ(x, y, z), kfToWorld);
+      float log_odds_value = it->getLogOdds();
+      server_ptr->m_octree->updateNode(p.x, p.y, p.z , log_odds_value, false);
+  }
+}
+
+void merge_Global_Map_Callback(const octomap_server::TransformStampedArraywithMap::ConstPtr &msg){
+  std::cout << "start merge submap" << std::endl;
+  server_ptr->m_octree->clear();
+  server_ptr->publishAll(ros::Time::now());
+  std::cout << "clear octree" << std::endl;
+  std::vector<geometry_msgs::TransformStamped>::const_iterator tf;
+  std::vector<octomap_msgs::OctomapWithPose>::const_iterator submap;
+  for(submap=msg->submaps.begin(); submap!=msg->submaps.end(); submap++){
+    for(tf=msg->transformArray.begin(); tf!=msg->transformArray.end(); tf++){
+      if(tf->header.frame_id==submap->header.frame_id){
+        add_submap_to_global(*tf, *submap);
+        break;
+      }
+    }
+  }
+  server_ptr->publishAll(ros::Time::now());
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "octomap_server");
@@ -56,6 +104,7 @@ int main(int argc, char** argv){
   }
 
   MultiOctomapServer server(private_nh, nh);
+  server_ptr = &server;
   ros::spinOnce();
 
   if (argc == 2){
@@ -77,10 +126,12 @@ int main(int argc, char** argv){
     }
   }
 
+  ros::Subscriber sub = server_ptr->m_nh.subscribe<octomap_server::TransformStampedArraywithMap>("TranswithSubMap", 1, merge_Global_Map_Callback);  //设置回调函数
+
   try{
     ros::spin();
   }catch(std::runtime_error& e){
-    ROS_ERROR("multi_octomap_server exception: %s", e.what());
+    ROS_ERROR("global_multi_octomap_server exception: %s", e.what());
     return -1;
   }
 

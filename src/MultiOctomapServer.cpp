@@ -9,7 +9,6 @@ MultiOctomapServer::MultiOctomapServer(const ros::NodeHandle private_nh_ = ros::
 {
   m_OctoMapSub = m_nh.subscribe<octomap_msgs::Octomap>("octomap_in", 5, &MultiOctomapServer::mergeMapCallback, this);
   std::cout << "start listen map" << std::endl;
-  ros::spin();
 }
 
 void MultiOctomapServer::mergeMapCallback(const octomap_msgs::Octomap::ConstPtr& map){

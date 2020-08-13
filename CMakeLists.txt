@@ -17,10 +17,14 @@ set(PACKAGE_DEPENDENCIES
 )
 
 
-find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES})
+find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES} message_generation)
 
 find_package(octomap REQUIRED)
 add_definitions(-DOCTOMAP_NODEBUGOUT)
+
+add_message_files(FILES TransformStampedArraywithMap.msg)
+add_service_files(FILES GetSubmaps.srv)
+generate_messages(DEPENDENCIES octomap_msgs)
 
 include_directories(
   include
@@ -57,6 +61,12 @@ target_link_libraries(octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
 add_executable(multi_octomap_server_node src/multi_octomap_server_node.cpp)
 target_link_libraries(multi_octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
 
+add_executable(global_multi_octomap_server_node src/global_multi_octomap_server_node.cpp)
+target_link_libraries(global_multi_octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
+
+add_executable(sub_octomap_server_node src/sub_octomap_server_node.cpp)
+target_link_libraries(sub_octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
+
 add_executable(octomap_color_server_node src/octomap_server_node.cpp)
 target_link_libraries(octomap_color_server_node ${PROJECT_NAME}_color ${LINK_LIBS})
 
@@ -80,6 +90,8 @@ target_link_libraries(octomap_server_nodelet ${PROJECT_NAME} ${LINK_LIBS})
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_color
   octomap_server_node
   multi_octomap_server_node
+  global_multi_octomap_server_node
+  sub_octomap_server_node
   octomap_color_server_node
   octomap_server_static
   octomap_server_multilayer
